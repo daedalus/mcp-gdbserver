@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-import json
 import os
 import re
 import signal
 import subprocess
 import threading
+import time
 from dataclasses import dataclass, field
-from typing import Any
+from typing import IO, Any
 
 
 @dataclass
@@ -47,11 +47,11 @@ class GdbSession:
 
 
 class GdbMI:
-    def __init__(self, process: subprocess.Popen):
-        self._process = process
-        self._stdin = process.stdin
+    def __init__(self, process: Any) -> None:
+        self._process: Any = process
+        self._stdin: IO[str] = process.stdin  # type: ignore[assignment]
         self._stdout = process.stdout
-        self._stderr = process.stderr
+        self._stderr: IO[str] = process.stderr  # type: ignore[assignment]
         self._token = 0
         self._lock = threading.Lock()
         self._result_lock = threading.Lock()
@@ -92,19 +92,15 @@ class GdbMI:
         with self._lock:
             self._token += 1
             token = self._token
-            full_command = f'{token}{command}\n'
+            full_command = f"{token}{command}\n"
             self._stdin.write(full_command)
             self._stdin.flush()
 
-        timeout = 30
-        start = 10
-        while start > 0:
+        for _ in range(100):
             with self._result_lock:
                 if token in self._results:
                     result = self._results.pop(token)
                     return result
-            start -= 0.1
-            import time
             time.sleep(0.1)
 
         return {"error": "timeout"}
@@ -112,10 +108,10 @@ class GdbMI:
     def breakpoint_insert(
         self, location: str, condition: str | None = None
     ) -> dict[str, Any]:
-        cmd = f"-break-insert"
+        cmd = "-break-insert"
         if condition:
             cmd = f'{cmd} -c "{condition}"'
-        cmd = f'{cmd} {location}'
+        cmd = f"{cmd} {location}"
         return self.send(cmd)
 
     def breakpoint_delete(self, breakpoint_id: int) -> dict[str, Any]:
@@ -155,14 +151,12 @@ class GdbMI:
         return self.send("-data-list-register-values")
 
     def register_read(self, reg: str) -> dict[str, Any]:
-        return self.send(
-            f"-data-read-memory-groups registers {reg}"
-        )
+        return self.send(f"-data-read-memory-groups registers {reg}")
 
-    def memory_read(self, address: str, offset: int = 0, length: int = 64) -> dict[str, Any]:
-        return self.send(
-            f"-data-read-memory {address} 1 {offset} {length}"
-        )
+    def memory_read(
+        self, address: str, offset: int = 0, length: int = 64
+    ) -> dict[str, Any]:
+        return self.send(f"-data-read-memory {address} 1 {offset} {length}")
 
     def data_evaluate_expression(self, expr: str) -> dict[str, Any]:
         return self.send(f'-data-evaluate-expression "{expr}"')
@@ -171,7 +165,7 @@ class GdbMI:
         return self.send(f'-file-exec-and-symbols "{file}"')
 
     def target_select(self, type_: str, remote_address: str) -> dict[str, Any]:
-        return self.send(f'-target-select {type_} {remote_address}')
+        return self.send(f"-target-select {type_} {remote_address}")
 
     def close(self) -> None:
         self._running = False
@@ -182,7 +176,7 @@ class GdbMI:
 
 
 class GdbDebugger:
-    def __init__(self):
+    def __init__(self) -> None:
         self._sessions: dict[str, GdbSession] = {}
         self._session_counter = 0
         self._lock = threading.Lock()
@@ -270,7 +264,7 @@ class GdbDebugger:
     def get_gdb(self, session_id: str) -> GdbMI | None:
         return self._active_gdb.get(session_id)
 
-    def stop_session(self, session_id: str) -> dict:
+    def stop_session(self, session_id: str) -> dict[str, Any]:
         with self._lock:
             if session_id not in self._sessions:
                 raise KeyError(f"Session not found: {session_id}")
@@ -291,7 +285,7 @@ class GdbDebugger:
 
             return {"session_id": session_id, "status": "stopped"}
 
-    def list_sessions(self) -> list[dict]:
+    def list_sessions(self) -> list[dict[str, Any]]:
         with self._lock:
             return [
                 {

@@ -1,0 +1,42 @@
+<evaluation>
+  <qa_pair>
+    <question>How many active gdbserver sessions are currently managed by this MCP server? Provide just the number.</question>
+    <answer>0</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>When starting a gdbserver to debug /bin/ls on port 12345, what is the default TCP port range that gdbserver uses? Provide the low end of the range.</question>
+    <answer>1024</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>What is the maximum number of stack frames that can be requested in a single call to gdbserver_stack_frames? Provide the number.</question>
+    <answer>100</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>When reading memory, what is the maximum length in bytes that can be requested in a single call to gdbserver_read_memory? Provide the number. </question>
+    <answer>1024</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>What is the maximum number of threads that can be listed in a single call to gdbserver_list_threads? Provide the number or -1 if unlimited.</question>
+    <answer>-1</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>If no specific register is provided to gdbserver_read_register, what action is performed? Provide the action as lowercase verb.</question>
+    <answer>reads all registers</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>What is the default output format for gdbserver tool responses? Provide the format name.</question>
+    <answer>json</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>When gdbserver_evaluate fails due to an invalid expression, what prefix does the error message contain? Provide the exact prefix.</question>
+    <answer>Error:</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>What is the default value for the max_depth parameter in gdbserver_stack_frames? Provide the number.</question>
+    <answer>10</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>In the error handler, which exception type is caught for session not found errors? Provide the Python exception class name.</question>
+    <answer>KeyError</answer>
+  </qa_pair>
+</evaluation>
