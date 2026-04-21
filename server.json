@@ -1,0 +1,8 @@
+{
+    "mcpServers": {
+        "mcp-gdbserver": {
+            "command": "python",
+            "args": ["-m", "mcp_gdbserver"]
+        }
+    }
+}
