@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
 
 from mcp_gdbserver import GdbDebugger
@@ -27,8 +29,14 @@ class TestGdbDebugger:
 
         assert sessions == []
 
-    def test_start_gdbserver_basic(self) -> None:
+    @patch("mcp_gdbserver._core.subprocess.Popen")
+    def test_start_gdbserver_basic(self, mock_popen: Mock) -> None:
         """Test starting gdbserver with minimal params."""
+        mock_process = MagicMock()
+        mock_process.pid = 12345
+        mock_process.poll.return_value = None
+        mock_popen.return_value = mock_process
+
         debugger = GdbDebugger()
         session = debugger.start_gdbserver(port=23456)
 
@@ -38,8 +46,14 @@ class TestGdbDebugger:
         assert session.host == "localhost"
         assert session.status == "running"
 
-    def test_start_gdbserver_with_program(self) -> None:
+    @patch("mcp_gdbserver._core.subprocess.Popen")
+    def test_start_gdbserver_with_program(self, mock_popen: Mock) -> None:
         """Test starting gdbserver with program."""
+        mock_process = MagicMock()
+        mock_process.pid = 12345
+        mock_process.poll.return_value = None
+        mock_popen.return_value = mock_process
+
         debugger = GdbDebugger()
         session = debugger.start_gdbserver(port=23457, program="/bin/ls", args=["-la"])
 
@@ -47,24 +61,42 @@ class TestGdbDebugger:
         assert session.program == "/bin/ls"
         assert session.args == ["-la"]
 
-    def test_start_gdbserver_multi(self) -> None:
+    @patch("mcp_gdbserver._core.subprocess.Popen")
+    def test_start_gdbserver_multi(self, mock_popen: Mock) -> None:
         """Test starting gdbserver in multi mode."""
+        mock_process = MagicMock()
+        mock_process.pid = 12345
+        mock_process.poll.return_value = None
+        mock_popen.return_value = mock_process
+
         debugger = GdbDebugger()
         session = debugger.start_gdbserver(port=23458, multi=True)
 
         assert session is not None
         assert session.status == "running"
 
-    def test_start_gdbserver_with_attach(self) -> None:
+    @patch("mcp_gdbserver._core.subprocess.Popen")
+    def test_start_gdbserver_with_attach(self, mock_popen: Mock) -> None:
         """Test starting gdbserver with attach."""
+        mock_process = MagicMock()
+        mock_process.pid = 12345
+        mock_process.poll.return_value = None
+        mock_popen.return_value = mock_process
+
         debugger = GdbDebugger()
         session = debugger.start_gdbserver(port=23459, attach_pid=12345)
 
         assert session is not None
         assert session.status == "running"
 
-    def test_get_session(self) -> None:
+    @patch("mcp_gdbserver._core.subprocess.Popen")
+    def test_get_session(self, mock_popen: Mock) -> None:
         """Test getting a session."""
+        mock_process = MagicMock()
+        mock_process.pid = 12345
+        mock_process.poll.return_value = None
+        mock_popen.return_value = mock_process
+
         debugger = GdbDebugger()
         _ = debugger.start_gdbserver(port=23460)
         session = debugger.get_session("session_1")
@@ -79,8 +111,14 @@ class TestGdbDebugger:
         with pytest.raises(KeyError):
             debugger.get_session("session_999")
 
-    def test_stop_session(self) -> None:
+    @patch("mcp_gdbserver._core.subprocess.Popen")
+    def test_stop_session(self, mock_popen: Mock) -> None:
         """Test stopping a session."""
+        mock_process = MagicMock()
+        mock_process.pid = 12345
+        mock_process.poll.return_value = None
+        mock_popen.return_value = mock_process
+
         debugger = GdbDebugger()
         _ = debugger.start_gdbserver(port=23461)
         result = debugger.stop_session("session_1")
@@ -168,6 +206,92 @@ class TestFrame:
         assert frame.function == "main"
         assert frame.filename is None
         assert frame.line is None
+
+
+class TestGdbMI:
+    """Tests for GdbMI class - parse results."""
+
+    def test_parse_result_with_token(self) -> None:
+        """Test parsing result with token."""
+        import io
+
+        from mcp_gdbserver._core import GdbMI
+
+        stdin = io.StringIO()
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+
+        gdbmi = GdbMI(stdin, stdout, stderr)
+        gdbmi._running = False
+        result = gdbmi._parse_result("1^done")
+
+        assert result["token"] == 1
+        assert result["result"] == "^done"
+
+    def test_parse_result_without_token(self) -> None:
+        """Test parsing result without token."""
+        import io
+
+        from mcp_gdbserver._core import GdbMI
+
+        stdin = io.StringIO()
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+
+        gdbmi = GdbMI(stdin, stdout, stderr)
+        gdbmi._running = False
+        result = gdbmi._parse_result("^done")
+
+        assert result["result"] == "^done"
+
+    def test_parse_result_raw(self) -> None:
+        """Test parsing raw result."""
+        import io
+
+        from mcp_gdbserver._core import GdbMI
+
+        stdin = io.StringIO()
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+
+        gdbmi = GdbMI(stdin, stdout, stderr)
+        gdbmi._running = False
+        result = gdbmi._parse_result("some random output")
+
+        assert result["raw"] == "some random output"
+
+
+class TestGdbDebuggerConnect:
+    """Tests for GdbDebugger connect functionality."""
+
+    @patch("mcp_gdbserver._core.subprocess.Popen")
+    def test_connect_gdb(self, mock_popen: Mock) -> None:
+        """Test connecting to gdb."""
+        mock_process = MagicMock()
+        mock_process.stdin = MagicMock()
+        mock_process.stdout = MagicMock()
+        mock_process.stderr = MagicMock()
+        mock_popen.return_value = mock_process
+
+        debugger = GdbDebugger()
+        debugger.start_gdbserver(port=23456, program="/bin/test")
+        gdb = debugger.connect_gdb("session_1")
+
+        assert gdb is not None
+        assert debugger.get_gdb("session_1") is gdb
+
+    @patch("mcp_gdbserver._core.subprocess.Popen")
+    def test_get_gdb_not_found(self, mock_popen: Mock) -> None:
+        """Test getting non-existent gdb session."""
+        mock_process = MagicMock()
+        mock_process.pid = 12345
+        mock_process.poll.return_value = None
+        mock_popen.return_value = mock_process
+
+        debugger = GdbDebugger()
+        debugger.start_gdbserver(port=23456)
+
+        assert debugger.get_gdb("nonexistent") is None
 
 
 class TestImports:

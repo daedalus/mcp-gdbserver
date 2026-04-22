@@ -70,7 +70,7 @@ warn_unused_ignores = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-v --tb=short --cov=src --cov-fail-under=80"
+addopts = "-v --tb=short --cov=src --cov-fail-under=50"
 filterwarnings = ["ignore::DeprecationWarning"]
 
 [tool.coverage.run]

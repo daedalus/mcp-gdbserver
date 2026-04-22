@@ -47,11 +47,15 @@ class GdbSession:
 
 
 class GdbMI:
-    def __init__(self, process: Any) -> None:
-        self._process: Any = process
-        self._stdin: IO[str] = process.stdin  # type: ignore[assignment]
-        self._stdout = process.stdout
-        self._stderr: IO[str] = process.stderr  # type: ignore[assignment]
+    def __init__(
+        self,
+        stdin: IO[str],
+        stdout: IO[str],
+        stderr: IO[str],
+    ) -> None:
+        self._stdin = stdin
+        self._stdout = stdout
+        self._stderr = stderr
         self._token = 0
         self._lock = threading.Lock()
         self._result_lock = threading.Lock()
@@ -62,14 +66,11 @@ class GdbMI:
 
     def _parse_result(self, line: str) -> dict[str, Any]:
         line = line.strip()
-        match = re.match(r"(\d+)(\^.*?)(\&.*)?", line)
+        match = re.match(r"(\d+)(\^.*)", line)
         if match:
             token = int(match.group(1))
             result = match.group(2)
-            data: dict[str, Any] = {"token": token, "result": result}
-            if match.group(3):
-                data["data"] = match.group(3)
-            return data
+            return {"token": token, "result": result}
         match = re.match(r"(\^.*)", line)
         if match:
             return {"result": match.group(1)}
@@ -169,10 +170,6 @@ class GdbMI:
 
     def close(self) -> None:
         self._running = False
-        try:
-            self._process.terminate()
-        except Exception:
-            pass
 
 
 class GdbDebugger:
@@ -255,9 +252,14 @@ class GdbDebugger:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             start_new_session=True,
+            text=True,
         )
 
-        gdb = GdbMI(process)
+        gdb = GdbMI(
+            process.stdin,  # type: ignore[arg-type]
+            process.stdout,  # type: ignore[arg-type]
+            process.stderr,  # type: ignore[arg-type]
+        )
         self._active_gdb[session_id] = gdb
         return gdb
 
